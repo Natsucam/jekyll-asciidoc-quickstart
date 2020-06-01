@@ -1,5 +1,5 @@
 :showtitle:
-
+:page-navtitle: Lorawan Entry
 = Projet : envoyer des données au _device_
 
 [TIP]
