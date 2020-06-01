@@ -1,6 +1,7 @@
+= Projet : envoyer des données au _device_
 :showtitle:
 :page-navtitle: Lorawan Entry
-= Projet : envoyer des données au _device_
+:page-root: ../../../
 
 [TIP]
 .Objectif
