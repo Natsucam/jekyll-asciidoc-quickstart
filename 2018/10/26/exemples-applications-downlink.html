@@ -1,0 +1,318 @@
+<!doctype html>
+<!--[if IE 9]>
+<html class="lt-ie10" lang="en"> <![endif]-->
+<html class="no-js" lang="en" data-useragent="Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; Trident/6.0)">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exemples Applications Downlink</title>
+    <meta name="description" content="The Jekyll AsciiDoc Quickstart project is a leg-up in starting your own website hosted on GitHub with content based in AsciiDoc.">
+    <meta name="author" content="Your name goes here">
+    <meta name="copyright" content="Maybe consider a Creative Commons license">
+    <link rel="stylesheet" href="css/foundation.css">
+    <link rel="stylesheet" href="css/font-awesome.css">
+    <link rel="stylesheet" href="css/coderay.css">
+    <link rel="stylesheet" href="css/asciidoctor.css">
+    <script src="js/vendor/modernizr.js"></script>
+    <script src="js/toc.js"></script>
+</head>
+<body>
+
+
+<!-- Nav Bar -->
+
+<nav class="top-bar" data-topbar>
+    <ul class="title-area">
+        <!-- Title Area -->
+        <li class="name">
+            <h1>
+                <a href="">Mon premier site en adoc</a>
+            </h1>
+        </li>
+        <li class="toggle-topbar menu-icon"><a href="#"><span>Menu</span></a></li>
+    </ul>
+</nav>
+<!-- End Nav -->
+
+
+<!-- Main Page Content and Sidebar -->
+
+<div class="row">
+
+    <!-- Main Blog Content -->
+    <div class="large-9 columns" role="content">
+
+        <h1>Projet : envoyer des données au <em>device</em></h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="title">Objectif</div>
+<div class="paragraph">
+<p>Envoyer des données au noeud LoRaWAN (ici un Feather M0) et les traiter (allumer une LED qui peut symboliser un relais ou tout autre composant)</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Comme pour l&#8217;émission (<em>uplink</em>) et le traitement de données depuis l&#8217;objet, l&#8217;envoi de données vers l&#8217;objet (<em>downlink</em>) est défini par le protocole LoRaWAN.</p>
+</div>
+<div class="paragraph">
+<p>Lorsque l&#8217;objet envoie des données, toutes les passerelles à proximité reçoivent le paquet et le transmettent au serveur de réseau (loraserver). Celui-ci choisit alors le paquet de la passerelle la mieux placée notamment sur la base de la qualité de la liaison radio avec l&#8217;objet.</p>
+</div>
+<div class="paragraph">
+<p>Une fois que l&#8217;objet a reçu un accusé de réception de la passerelle la mieux placée, il attend durant deux fenêtres temporelles (<em>RX Windows</em>) l’éventuelle réception d&#8217;un message (<em>downlink message</em>).</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Le première fenêtre dure 1s et la seconde 2s. Durant ces (<em>RX Windows</em>), l&#8217;objet attend une info indiquant que des données sont dans la file d&#8217;attente pour être transmises. Si c&#8217;est la cas, la fenêtre sera prolongé le temps nécessaire (maximum 3s). Tout cela est défini dans le protocole. Pour info, il y a deux fenêtres de <em>join</em> une de 5s et l&#8217;autre de 6s.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>De son côté, le serveur de réseau, une fois l&#8217;accusé de réception envoyé via la passerelle, regarde s&#8217;il n&#8217;y a pas des messages à envoyer dans le file d&#8217;attente de l&#8217;objet. Si oui, il les transmet à la passerelle qui va utiliser une des fenêtres temporelles durant lesquelles l&#8217;objet écoute.</p>
+</div>
+<div class="paragraph">
+<p>La réception effective des données par l&#8217;objet n&#8217;est donc pas immédiate. Ce n&#8217;est pas une limitation mais une fonctionnalité du protocole. Rappelons qu&#8217;il est destiné à des réseaux longue portée, bas débit et surtout basse consommation. Si cela ne correspond pas à vos besoins, voir du côté du Wifi, Bluetooth, zigbee&#8230;&#8203;</p>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+<div class="title">Pour les utilisateurs avec un compte sur les serveurs</div>
+<div class="literalblock">
+<div class="content">
+<pre>ssh root@loraserver.tetaneutral.net -p2222</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Comme loraserver est dans un container docker, il n&#8217;y rien dans <code>/etc/var/log</code>. Pour voir en temps réel les 30 derniers messages de log du loraserver :</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>docker logs --tail 30 -f loraserverdocker_loraserver_1</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Plus d&#8217;infos ici : <a href="https://docs.docker.com/engine/reference/commandline/logs/" class="bare">https://docs.docker.com/engine/reference/commandline/logs/</a></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>docker logs --tail 40 -f loraserverdocker_appserver_1</pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="envoyer_des_données_via_mqtt">Envoyer des données via MQTT</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Selon la <a href="https://www.loraserver.io/lora-app-server/integrate/data/">documentation</a>, il suffit de publier sur le topic : <code>application/[applicationID]/device/[devEUI]/tx</code></p>
+</div>
+<div class="paragraph">
+<p>avec une payload du type suivant :</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>{
+    &quot;reference&quot;: &quot;abcd1234&quot;,                  // reference which will be used on ack or error (this can be a random string)
+    &quot;confirmed&quot;: true,                        // whether the payload must be sent as confirmed data down or not
+    &quot;fPort&quot;: 10,                              // FPort to use (must be &gt; 0)
+    &quot;data&quot;: &quot;....&quot;                            // base64 encoded data (plaintext, will be encrypted by LoRa Server)
+    &quot;object&quot;: {                               // decoded object (when application coded has been configured)
+        &quot;temperatureSensor&quot;: {&quot;1&quot;: 25},       // when providing the 'object', you can omit 'data'
+        &quot;humiditySensor&quot;: {&quot;1&quot;: 32}
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Voici un exemple de payload. Ici nous envoyons 1 codé en base 64 :</p>
+</div>
+<div class="listingblock">
+<div class="title">fichier testpayload</div>
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="json">{
+    <span class="key"><span class="delimiter">&quot;</span><span class="content">reference</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">abcd1234</span><span class="delimiter">&quot;</span></span>,
+    <span class="key"><span class="delimiter">&quot;</span><span class="content">confirmed</span><span class="delimiter">&quot;</span></span>: <span class="value">true</span>,
+    <span class="key"><span class="delimiter">&quot;</span><span class="content">fPort</span><span class="delimiter">&quot;</span></span>: <span class="integer">10</span>,
+    <span class="key"><span class="delimiter">&quot;</span><span class="content">data</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">MQo=</span><span class="delimiter">&quot;</span></span>
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>et pour l&#8217;envoyer à l&#8217;objet :</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>mosquitto_pub -h loraserver.tetaneutral.net -t "application/5/device/010203040506070b/tx" -f testpayload</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>pour encoder un texte en base 64 faire :</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>echo "texte" | base64</pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>On peut aussi utiliser l&#8217;API de loraserver : <a href="https://www.loraserver.io/lora-app-server/integrate/api/" class="bare">https://www.loraserver.io/lora-app-server/integrate/api/</a></p>
+</div>
+<div class="paragraph">
+<p>TODO&#8230;&#8203;</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="traiter_les_données_reçues">Traiter les données reçues</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Dans l&#8217;automate LMIC, on peut rajouter l&#8217;appel à une fonction que l&#8217;on nommera, par exemple, <code>do_if_data_received()</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="c"><span class="keyword">case</span> EV_TXCOMPLETE:
+    Serial.println(F(<span class="string"><span class="delimiter">&quot;</span><span class="content">EV_TXCOMPLETE (includes waiting for RX windows)</span><span class="delimiter">&quot;</span></span>));
+    <span class="keyword">if</span> (LMIC.txrxFlags &amp; TXRX_ACK)
+        Serial.println(F(<span class="string"><span class="delimiter">&quot;</span><span class="content">Received ack</span><span class="delimiter">&quot;</span></span>));
+    <span class="keyword">if</span> (LMIC.dataLen)
+    {
+        Serial.println(F(<span class="string"><span class="delimiter">&quot;</span><span class="content">Received </span><span class="delimiter">&quot;</span></span>));
+        Serial.println(LMIC.dataLen);
+        Serial.println(F(<span class="string"><span class="delimiter">&quot;</span><span class="content"> bytes of payload</span><span class="delimiter">&quot;</span></span>));
+        do_if_data_received();
+    }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Les données reçues sont stockées dans un tableau d&#8217;entiers non signés de type <code>u1_t</code> (en fait de type <code>uint8_t</code>) d&#8217;une longueur maximum de 64 bits nommé <code>LMIC.frame</code> (voir ligne 250 du fichier <code>lmic.h</code>).</p>
+</div>
+<div class="paragraph">
+<p>Le source de <code>do_if_data_received()</code> peut être :</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="c"><span class="directive">void</span> do_if_data_received()
+{
+    <span class="keyword">for</span> (<span class="predefined-type">int</span> i = <span class="integer">0</span>; i &lt; LMIC.dataLen; i++)
+    {
+        <span class="keyword">if</span> (LMIC.frame[LMIC.dataBeg + i] &lt; <span class="hex">0x10</span>)
+        {
+            Serial.print(F(<span class="string"><span class="delimiter">&quot;</span><span class="content">0</span><span class="delimiter">&quot;</span></span>));
+        }
+        Serial.write(LMIC.frame[LMIC.dataBeg + i]);
+    }
+    Serial.println(<span class="string"><span class="delimiter">&quot;</span><span class="delimiter">&quot;</span></span>);
+    <span class="keyword">if</span> (LMIC.frame[LMIC.dataBeg] == <span class="integer">49</span>) <span class="comment">// FIXME: pas très heureux...</span>
+    {
+        digitalWrite(<span class="integer">13</span>, HIGH);
+    }
+    <span class="keyword">else</span>
+    {
+        digitalWrite(<span class="integer">13</span>, LOW);
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="source_complet">Source complet</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="c">Unresolved directive in <span class="integer">2018</span>-<span class="integer">10</span>-<span class="integer">26</span>-exemples-applications-downlink.adoc - include::./src/FeatherM0-LoRaWAN-exemple-downlink/src/main.cpp[]</code></pre>
+</div>
+</div>
+</div>
+</div>
+
+    </div>
+
+    <!-- End Main Content -->
+
+    <!-- Sidebar -->
+
+    <aside class="large-3 columns">
+
+        <h4>Posts</h4>
+        <ul id="posts" class="posts nav">
+            
+            <li><a href="https://natsucam.github.io/jekyll-asciidoc-quickstart/2018/10/26/exemples-applications-downlink.html"></a></li>
+            
+            <li><a href="https://natsucam.github.io/jekyll-asciidoc-quickstart/2016/01/01/second-entry.html">Second Entry</a></li>
+            
+            <li><a href="https://natsucam.github.io/jekyll-asciidoc-quickstart/2015/01/01/first-entry.html">First Entry</a></li>
+            
+        </ul>
+
+        <div class="panel">
+            <h5>Featured</h5>
+
+            <p>Pork drumstick turkey fugiat. Tri-tip elit turducken pork chop in. Swine short ribs meatball irure bacon
+                nulla pork belly cupidatat meatloaf cow.</p>
+        </div>
+
+    </aside>
+
+    <!-- End Sidebar -->
+</div>
+
+<!-- End Main Content and Sidebar -->
+
+
+<!-- Footer -->
+
+<footer class="row">
+    <div class="large-12 columns">
+        <hr>
+        <div class="row">
+            <div class="large-12 columns">
+                <p>Footer</p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="js/vendor/jquery.js"></script>
+<script src="js/foundation.min.js"></script>
+<script>
+$(document).foundation();
+var doc = document.documentElement;
+doc.setAttribute('data-useragent', navigator.userAgent);
+</script>
+</body>
+</html>
